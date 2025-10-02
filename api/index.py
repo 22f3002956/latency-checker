@@ -26,18 +26,15 @@ async def check_latency(req: Request):
     regions = body.get("regions", [])
     threshold = body.get("threshold_ms", 180)
 
-    # Path to telemetry.json
     json_path = Path(__file__).parent.parent / "telemetry.json"
     if not json_path.exists():
-        return {"error": f"JSON not found at {json_path}"}
+        return {"regions": {}, "error": f"JSON not found at {json_path}"}
 
-    # Load JSON into DataFrame
     df = pd.read_json(json_path)
 
-    # Adjust column names to match your file
     expected = {"region", "latency_ms", "uptime_pct"}
     if not expected.issubset(df.columns):
-        return {"error": f"JSON missing required columns. Found: {list(df.columns)}"}
+        return {"regions": {}, "error": f"JSON missing required columns. Found: {list(df.columns)}"}
 
     results = {}
     for region in regions:
@@ -46,7 +43,7 @@ async def check_latency(req: Request):
             continue
         avg_latency = float(sub["latency_ms"].mean())
         p95_latency = float(np.percentile(sub["latency_ms"], 95))
-        avg_uptime = float(sub["uptime_pct"].mean())   # use uptime_pct here
+        avg_uptime = float(sub["uptime_pct"].mean())
         breaches = int((sub["latency_ms"] > threshold).sum())
 
         results[region] = {
@@ -56,4 +53,5 @@ async def check_latency(req: Request):
             "breaches": breaches,
         }
 
-    return results
+    # ✅ Always wrap in "regions"
+    return {"regions": results}
