@@ -2,9 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 app = FastAPI()
 
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,20 +14,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def home():
+    return {"status": "API running. Use POST with JSON body to get metrics."}
+
 @app.post("/")
 async def check_latency(req: Request):
     body = await req.json()
     regions = body.get("regions", [])
     threshold = body.get("threshold_ms", 180)
 
-    import os
-    import pathlib
+    # Always resolve CSV path from repo root
+    csv_path = Path(__file__).parent.parent / "telemetry.csv"
+    if not csv_path.exists():
+        return {"error": f"CSV not found at {csv_path}"}
 
-# Get project root (parent of /api)
-root = pathlib.Path(__file__).parent.parent
-csv_path = root / "telemetry.csv"
-
-df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path)
 
     results = {}
     for region in regions:
