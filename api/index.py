@@ -18,7 +18,14 @@ async def check_latency(req: Request):
     regions = body.get("regions", [])
     threshold = body.get("threshold_ms", 180)
 
-    df = pd.read_csv("telemetry.csv")
+    import os
+    import pathlib
+
+# Get project root (parent of /api)
+root = pathlib.Path(__file__).parent.parent
+csv_path = root / "telemetry.csv"
+
+df = pd.read_csv(csv_path)
 
     results = {}
     for region in regions:
