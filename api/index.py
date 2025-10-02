@@ -24,12 +24,18 @@ async def check_latency(req: Request):
     regions = body.get("regions", [])
     threshold = body.get("threshold_ms", 180)
 
-    # Always resolve CSV path from repo root
-    csv_path = Path(__file__).parent.parent / "telemetry.csv"
-    if not csv_path.exists():
-        return {"error": f"CSV not found at {csv_path}"}
+    # Always resolve JSON path from repo root
+    json_path = Path(__file__).parent.parent / "telemetry.json"
+    if not json_path.exists():
+        return {"error": f"JSON not found at {json_path}"}
 
-    df = pd.read_csv(csv_path)
+    # Load JSON into DataFrame
+    df = pd.read_json(json_path)
+
+    # Make sure it has the right columns
+    expected = {"region", "latency_ms", "uptime"}
+    if not expected.issubset(df.columns):
+        return {"error": f"JSON missing required columns. Found: {list(df.columns)}"}
 
     results = {}
     for region in regions:
